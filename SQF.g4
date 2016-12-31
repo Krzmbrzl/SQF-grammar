@@ -38,7 +38,7 @@ grammar SQF;
 	package raven.sqdev.editors.sqfeditor.parsing;
 }
 
-tokens{BINARY_OPERATOR, MACRO_NAME}
+tokens{MACRO_NAME}
 
 code:
 	(statement semicolon=SEMICOLON?)+
@@ -46,11 +46,11 @@ code:
 ;
 	
 	macro:
-		MACRO_NAME (R_B_O macroArgument (COMMA macroArgument)*? R_B_C)?
+		MACRO_NAME (R_B_O macroArgument (COMMA macroArgument)* R_B_C)?
 	;
 	
 		macroArgument:
-			(~(COMMA | R_B_C ) | R_B_O macroArgument R_B_C)*?
+			(R_B_O macroArgument R_B_C | ~(COMMA | R_B_C ))*?
 		;
 
 	statement:
@@ -64,21 +64,21 @@ code:
 		;
 		
 		binaryExpression:
-			primaryExpression
-			| binaryExpression POWER binaryExpression // note that the '^' operator is left-associative
-			| binaryExpression OPERATOR_PRECEDENCE_MULTIPLY binaryExpression
-			| binaryExpression OPERATOR_PRECEDENCE_ADD binaryExpression
+			primaryExpression POWER binaryExpression // note that the '^' operator is left-associative
+			| primaryExpression OPERATOR_PRECEDENCE_MULTIPLY binaryExpression
+			| primaryExpression OPERATOR_PRECEDENCE_ADD binaryExpression
 			| binaryExpression ELSE binaryExpression
-			| binaryExpression BINARY_OPERATOR binaryExpression
-			| binaryExpression COMPARE_PRECEDENCE_OPERATOR binaryExpression
-			| binaryExpression AND binaryExpression
-			| binaryExpression OR binaryExpression
+			| primaryExpression BINARY_OPERATOR binaryExpression
+			| primaryExpression COMPARE_PRECEDENCE_OPERATOR binaryExpression
+			| primaryExpression AND binaryExpression
+			| primaryExpression OR binaryExpression
+			| primaryExpression
 		;
 		
 			primaryExpression:
-				unaryExpression											#unaryOperator
+				macro												#macroExpression
+				| unaryExpression										#unaryOperator
 				| nularExpression										#nularOperator
-				| macro												#macroExpression
 				| NUMBER												#Number
 				| STRING												#String
 				| C_B_O code? C_B_C									#InlineCode
@@ -125,7 +125,7 @@ code:
 
 
 //////////////////////////////LEXER//////////////////////////////////////////
-OPERATOR_PRECEDENCE_MULTIPLY: '*' /*| '/' */ | '%' | 'mod' ;
+OPERATOR_PRECEDENCE_MULTIPLY: '*' | '/'  | '%' | 'mod' ;
 OPERATOR_PRECEDENCE_ADD: '+' | '-' | 'min' | 'max' ;
 PUCTUATION_OTHER: '!' ;
 
@@ -158,7 +158,9 @@ ID: (LETTER | INT | '_')+ {
 			setType(SQFParser.BINARY_OPERATOR);
 		}
 	}
-} ;
+};
+
+BINARY_OPERATOR: ':' ;
 
 STRING: '"' (~'"' | '""')* '"' | '\'' (~'\'' | '\'\'')* '\'';
 
