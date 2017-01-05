@@ -41,8 +41,7 @@ grammar SQF;
 tokens{MACRO_NAME}
 
 code:
-	(statement semicolon=SEMICOLON?)+
-	| EOF
+	(statement semicolon=SEMICOLON?)*
 ;
 	
 	macro:
@@ -102,6 +101,7 @@ code:
 			
 				nularExpression:
 					operator
+					| BINARY_OPERATOR
 				;
 				
 				unaryExpression:
