@@ -40,8 +40,12 @@ grammar SQF;
 
 tokens{MACRO_NAME}
 
+start:
+	code EOF
+;
+
 code:
-	(statement semicolon=SEMICOLON?)*
+	(statement semicolon=SEMICOLON?)* statement?
 ;
 	
 	macro:
@@ -63,14 +67,16 @@ code:
 		;
 		
 		binaryExpression:
-			primaryExpression POWER binaryExpression // note that the '^' operator is left-associative
-			| primaryExpression OPERATOR_PRECEDENCE_MULTIPLY binaryExpression
-			| primaryExpression OPERATOR_PRECEDENCE_ADD binaryExpression
+			binaryExpression POWER binaryExpression // note that the '^' operator is left-associative
+			| binaryExpression OPERATOR_PRECEDENCE_MULTIPLY binaryExpression
+			| binaryExpression OPERATOR_PRECEDENCE_ADD binaryExpression
 			| binaryExpression ELSE binaryExpression
-			| primaryExpression BINARY_OPERATOR binaryExpression
-			| primaryExpression COMPARE_PRECEDENCE_OPERATOR binaryExpression
-			| primaryExpression AND binaryExpression
-			| primaryExpression OR binaryExpression
+			| binaryExpression BINARY_OPERATOR binaryExpression //TODO: check before primaryExpression
+			| binaryExpression COMPARE_PRECEDENCE_OPERATOR binaryExpression
+			| binaryExpression AND binaryExpression
+			| binaryExpression OR binaryExpression
+			| BINARY_OPERATOR primaryExpression // binary operator used as unary operator
+			| BINARY_OPERATOR // binary operator used as nular operator
 			| primaryExpression
 		;
 		
@@ -80,33 +86,28 @@ code:
 				| nularExpression										#nularOperator
 				| NUMBER												#Number
 				| STRING												#String
-				| C_B_O code? C_B_C									#InlineCode
-				| S_B_O (binaryExpression (COMMA binaryExpression)* )? S_B_C		#Array
+				| C_B_O code C_B_C									#InlineCode
+				| S_B_O (binaryExpression (COMMA binaryExpression)* )? S_B_C	#Array
 				| R_B_O binaryExpression? R_B_C							#Parenthesis
 				| commonError											#Error
 			;
 				
 				// Some common errors
 				commonError:
-					C_B_O code? {notifyErrorListeners("Missing closing '}'");}
-					//| code? C_B_C {notifyErrorListeners("Missing opening '{'");}
-					| C_B_O code? C_B_C C_B_C {notifyErrorListeners("Too many curly brackets!");}
+					C_B_O code {notifyErrorListeners("Missing closing '}'");}
+					| C_B_O code C_B_C C_B_C {notifyErrorListeners("Too many curly brackets!");}
 					| S_B_O binaryExpression? {notifyErrorListeners("Missing closing ']'");}
-					//| code? S_B_C {notifyErrorListeners("Missing opening '['");}
 					| S_B_O binaryExpression? S_B_C S_B_C {notifyErrorListeners("Too many square brackets!");}
 					| R_B_O binaryExpression? {notifyErrorListeners("Missing closing ')'");}
-					//| code? R_B_C {notifyErrorListeners("Missing opening '('");}
 					| R_B_O binaryExpression? R_B_C R_B_C {notifyErrorListeners("Too many parentheses!");}
 				;
 			
 				nularExpression:
 					operator
-					| BINARY_OPERATOR
 				;
 				
 				unaryExpression:
 					operator primaryExpression
-					| BINARY_OPERATOR primaryExpression
 					| PRIVATE primaryExpression
 				;
 				
