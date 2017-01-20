@@ -76,35 +76,36 @@ code:
 			| binaryExpression AND binaryExpression
 			| binaryExpression OR binaryExpression
 			| BINARY_OPERATOR primaryExpression // binary operator used as unary operator
+			| OPERATOR_PRECEDENCE_ADD primaryExpression // used as punctuation
 			| BINARY_OPERATOR // binary operator used as nular operator
 			| primaryExpression
 		;
 		
 			primaryExpression:
-				macro												#macroExpression
-				| unaryExpression										#unaryOperator
-				| nularExpression										#nularOperator
-				| NUMBER												#Number
-				| STRING												#String
-				| C_B_O code C_B_C									#InlineCode
-				| S_B_O (binaryExpression (COMMA binaryExpression)* )? S_B_C	#Array
-				| R_B_O binaryExpression? R_B_C							#Parenthesis
-				| commonError											#Error
+				macro
+				| unaryExpression
+				| nularExpression
 			;
-				
-				// Some common errors
-				commonError:
-					C_B_O code {notifyErrorListeners("Missing closing '}'");}
-					| C_B_O code C_B_C C_B_C {notifyErrorListeners("Too many curly brackets!");}
-					| S_B_O binaryExpression? {notifyErrorListeners("Missing closing ']'");}
-					| S_B_O binaryExpression? S_B_C S_B_C {notifyErrorListeners("Too many square brackets!");}
-					| R_B_O binaryExpression? {notifyErrorListeners("Missing closing ')'");}
-					| R_B_O binaryExpression? R_B_C R_B_C {notifyErrorListeners("Too many parentheses!");}
-				;
 			
 				nularExpression:
-					operator
+					operator												#NularOperator
+					| NUMBER												#Number
+					| STRING												#String
+					| C_B_O code C_B_C									#InlineCode
+					| S_B_O (binaryExpression (COMMA binaryExpression)* )? S_B_C	#Array
+					| R_B_O binaryExpression? R_B_C							#Parenthesis
+					| commonError											#Error
 				;
+				
+					// Some common errors
+					commonError:
+						C_B_O code {notifyErrorListeners("Missing closing '}'");}
+						| C_B_O code C_B_C C_B_C {notifyErrorListeners("Too many curly brackets!");}
+						| S_B_O binaryExpression? {notifyErrorListeners("Missing closing ']'");}
+						| S_B_O binaryExpression? S_B_C S_B_C {notifyErrorListeners("Too many square brackets!");}
+						| R_B_O binaryExpression? {notifyErrorListeners("Missing closing ')'");}
+						| R_B_O binaryExpression? R_B_C R_B_C {notifyErrorListeners("Too many parentheses!");}
+					;
 				
 				unaryExpression:
 					operator primaryExpression
@@ -117,8 +118,7 @@ code:
 					;
 					
 						punctuation:
-							OPERATOR_PRECEDENCE_ADD
-							| PUCTUATION_OTHER
+							PUCTUATION_OTHER
 						;
 
 
