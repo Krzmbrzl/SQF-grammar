@@ -18,18 +18,23 @@ grammar SQF;
 @lexer::members {
 	
 	protected List<String> binaryOperators;
+	protected List<String> unaryOperators;
 	protected List<String> macroNames;
 	
 	
-	public SQFLexer(CharStream input, List<String> binaryOperators, List<String> macroNames) {
+	public SQFLexer(CharStream input, List<String> binaryOperators, List<String> unaryOperators, List<String> macroNames) {
 		this(input);
 		
 		// make operators lowercase
 		for(int i=0; i<binaryOperators.size(); i++) {
 			binaryOperators.set(i, binaryOperators.get(i).toLowerCase());
 		}
+		for(int i=0; i<unaryOperators.size(); i++) {
+			unaryOperators.set(i, unaryOperators.get(i).toLowerCase());
+		}
 		
 		this.binaryOperators = binaryOperators;
+		this.unaryOperators = unaryOperators;
 		this.macroNames = macroNames;
 	}
 }
@@ -38,7 +43,7 @@ grammar SQF;
 	package raven.sqdev.editors.sqfeditor.parsing;
 }
 
-tokens{MACRO_NAME}
+tokens{MACRO_NAME, UNARY_OPERATOR}
 
 start:
 	code EOF
@@ -75,15 +80,15 @@ code:
 			| binaryExpression COMPARE_PRECEDENCE_OPERATOR binaryExpression
 			| binaryExpression AND binaryExpression
 			| binaryExpression OR binaryExpression
-			| BINARY_OPERATOR primaryExpression // binary operator used as unary operator
-			| OPERATOR_PRECEDENCE_ADD primaryExpression // used as punctuation
+			| BINARY_OPERATOR primaryExpression[false] // binary operator used as unary operator
+			| OPERATOR_PRECEDENCE_ADD primaryExpression[false] // used as punctuation
 			| BINARY_OPERATOR // binary operator used as nular operator
-			| primaryExpression
+			| primaryExpression[false]
 		;
 		
-			primaryExpression:
+			primaryExpression[boolean allowBinaryAlts]:
 				macro
-				| unaryExpression
+				| unaryExpression [allowBinaryAlts]
 				| nularExpression
 			;
 			
@@ -107,9 +112,10 @@ code:
 						| R_B_O binaryExpression? R_B_C R_B_C {notifyErrorListeners("Too many parentheses!");}
 					;
 				
-				unaryExpression:
-					operator primaryExpression
-					| PRIVATE primaryExpression
+				unaryExpression [boolean allowBinaryAlts]:
+					(UNARY_OPERATOR | PUCTUATION_OTHER) primaryExpression[true] 
+					| {$allowBinaryAlts}? BINARY_OPERATOR primaryExpression[true] // binary operator used as unary operator
+					| PRIVATE primaryExpression[false]
 				;
 				
 					operator:
@@ -151,12 +157,17 @@ COMMENT: ('//' .*? ('\n' | EOF) | '/*' .*? '*/') -> skip ;
 NUMBER: INT+ ('.' INT+)? ;
 ID: (LETTER | INT | '_')+ {
 	if (macroNames.contains(getText())) {
-		// it's not an ID but a macro name'
+		// it's not an ID but a macro name
 		setType(SQFParser.MACRO_NAME);
 	} else {
 		if (binaryOperators.contains(getText().toLowerCase())) {
-			// it's not an ID but a binary operator'
+			// it's not an ID but a binary operator
 			setType(SQFParser.BINARY_OPERATOR);
+		} else {
+			if(unaryOperators.contains(getText().toLowerCase())) {
+				// it's not an ID but a unary operator
+				setType(SQFParser.UNARY_OPERATOR);
+			}
 		}
 	}
 };
