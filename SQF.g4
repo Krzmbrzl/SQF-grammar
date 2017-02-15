@@ -154,7 +154,9 @@ MACRO_DECLARATION: (('#ifdef' | '#ifndef') .*? '#endif'
 WHITESPACE: [ \r\n\t]+ -> skip ;
 COMMENT: ('//' .*? ('\n' | EOF) | '/*' .*? '*/') -> skip ;
 
-NUMBER: INT+ ('.' INT+)? ;
+NUMBER: (INT+ ('.' INT+)? | ('0x' | '$') (INT | LETTER)+) 
+				('e' ('-')? (INT+ ('.' INT+)? | ('0x' | '$') (INT | LETTER)+))? ;
+
 ID: (LETTER | INT | '_')+ {
 	if (macroNames.contains(getText())) {
 		// it's not an ID but a macro name
