@@ -58,7 +58,7 @@ code:
 	;
 	
 		macroArgument:
-			(R_B_O macroArgument R_B_C | ~(COMMA | R_B_C ))*?
+			(R_B_O macroArgument (COMMA macroArgument)* R_B_C | ~(COMMA | R_B_C ))*?
 		;
 
 	statement:
